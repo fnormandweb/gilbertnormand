@@ -1,0 +1,20 @@
+{
+  "name": "site-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build:admin": "cd ../site-web-admin && VITE_BUILD_FOR_API=1 pnpm run build",
+    "build:site": "cd ../site-web && VITE_API_URL= pnpm run build",
+    "build:all": "pnpm run build:admin && pnpm run build:site",
+    "start:full": "pnpm run build:all && pnpm start"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "sql.js": "^1.14.0"
+  }
+}

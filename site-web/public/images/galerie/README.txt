@@ -1,0 +1,20 @@
+Fichiers attendus pour la galerie (18 images) :
+
+Gilbert_petit.jpg
+Gilbert_Normand_1947.jpg
+Gilbert_Normand_1960.jpg
+Gilbert_Normand_1970.jpeg
+Gilbert_Normand_1971.jpeg
+Gilbert_Normand_voilier.jpg
+Gilbert_Normand_mariage.jpg
+Mariage_Gilbert_Normand.jpg
+Gilbert_Normand_Jean_Paul_Riopelle_Lemieux.jpg
+Jean_paul_riopellejean_julien_bourgault_gilbert_normand.jpg
+jean_paul_riopelle_gilbert_normand_oie.jpg
+Gilbert_Normand_chambre_des_communes.jpg
+Gilbert_Normand_Clement_Gaudreau.jpg
+Gilbert_Normand_assermentation.jpg
+Gilbert_Normand_Prince_Charles.jpg
+Gilbert_Normand_Maurice_Harvey.jpg
+Gilbert_Normand_Line_Anctil.jpg
+Gilbert_Normand_Timbres_Jean_Paul_Riopelle.jpg
