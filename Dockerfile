@@ -14,12 +14,14 @@ COPY site-api ./site-api
 COPY site-web ./site-web
 COPY site-web-admin ./site-web-admin
 
-# site-web a "vite": "workspace:*" (monorepo) : npm ne comprend pas. Remplacer pour le build standalone.
+# site-web a "vite": "workspace:*" (monorepo) : remplacer pour le build standalone
 RUN sed -i 's/"workspace:\*"/"^6.0.0"/g' site-web/package.json
+# lockfile invalide après la modif → on le supprime pour une install propre
+RUN rm -f site-web/pnpm-lock.yaml site-web/package-lock.json
 
 # Dépendances
 RUN cd site-api && pnpm install --frozen-lockfile || pnpm install
-RUN cd site-web && pnpm install --frozen-lockfile || pnpm install
+RUN cd site-web && pnpm install
 RUN cd site-web-admin && pnpm install --frozen-lockfile || pnpm install
 
 # Build site + admin (depuis site-api)
