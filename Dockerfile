@@ -9,26 +9,11 @@ WORKDIR /app
 # pnpm pour les builds
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-<<<<<<< HEAD
 # Code source (on copie tout d'abord pour pouvoir corriger package.json)
-=======
-# Fichiers package
-COPY site-api/package.json site-api/package-lock.json* ./site-api/
-COPY site-web/package.json site-web/package-lock.json* ./site-web/
-COPY site-web-admin/package.json site-web-admin/package-lock.json* ./site-web-admin/
-
-# Dépendances
-RUN cd site-api && pnpm install --frozen-lockfile || npm install
-RUN cd site-web && (pnpm install --frozen-lockfile || npm install)
-RUN cd site-web-admin && (pnpm install --frozen-lockfile || npm install)
-
-# Code source
->>>>>>> c41681e2f1ef4a02794447a395e11139e47d4655
 COPY site-api ./site-api
 COPY site-web ./site-web
 COPY site-web-admin ./site-web-admin
 
-<<<<<<< HEAD
 # site-web a "vite": "workspace:*" (monorepo) : npm ne comprend pas. Remplacer pour le build standalone.
 RUN sed -i 's/"workspace:\*"/"^6.0.0"/g' site-web/package.json
 
@@ -39,10 +24,6 @@ RUN cd site-web-admin && pnpm install --frozen-lockfile || pnpm install
 
 # Build site + admin (depuis site-api)
 RUN cd site-api && pnpm run build:all
-=======
-# Build site + admin (depuis site-api)
-RUN cd site-api && pnpm run build:all || (npm run build:all 2>/dev/null || true)
->>>>>>> c41681e2f1ef4a02794447a395e11139e47d4655
 
 # Port exposé (Fly.io injecte PORT=8080)
 ENV PORT=8080
