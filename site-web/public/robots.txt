@@ -1,0 +1,7 @@
+# robots.txt - gilbertnormand.com
+# Référencement : ne pas bloquer l'indexation des pages principales
+
+User-agent: *
+Allow: /
+
+Sitemap: https://gilbertnormand.com/sitemap.xml
