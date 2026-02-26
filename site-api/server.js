@@ -46,13 +46,26 @@ app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '2mb' }))
 
 let db = null
+let dbPathResolved = null
 
 async function getDb() {
   if (db) return db
   const SQL = await initSqlJs()
   const dataDir = join(__dirname, 'data')
   if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true })
-  const dbPath = process.env.DB_PATH || join(dataDir, 'gilbert.db')
+  let dbPath = process.env.DB_PATH || join(dataDir, 'gilbert.db')
+  // Si DB_PATH est défini (ex. /data/gilbert.db) mais que le dossier n'existe pas (Render sans volume), utiliser le défaut
+  if (process.env.DB_PATH) {
+    const dbDir = dirname(dbPath)
+    if (!existsSync(dbDir)) {
+      try {
+        mkdirSync(dbDir, { recursive: true })
+      } catch {
+        dbPath = join(dataDir, 'gilbert.db')
+      }
+    }
+  }
+  dbPathResolved = dbPath
   if (existsSync(dbPath)) {
     db = new SQL.Database(readFileSync(dbPath))
   } else {
@@ -69,9 +82,10 @@ async function getDb() {
 
 function saveDb() {
   if (!db) return
-  const dataDir = join(__dirname, 'data')
-  const dbPath = process.env.DB_PATH || join(dataDir, 'gilbert.db')
-  writeFileSync(dbPath, Buffer.from(db.export()))
+  const path = dbPathResolved || join(__dirname, 'data', 'gilbert.db')
+  const dir = dirname(path)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  writeFileSync(path, Buffer.from(db.export()))
 }
 
 function getContent(key) {
