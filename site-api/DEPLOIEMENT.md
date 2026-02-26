@@ -364,6 +364,7 @@ Cette erreur peut venir de plusieurs choses. À essayer dans l’ordre :
    → [fly.io/dashboard](https://fly.io/dashboard) → **Account** / **Billing** → **Add payment method**.
 
 2. **Créer l’app en ligne de commande (pour voir l’erreur précise)**  
+<<<<<<< HEAD
    Le dashboard affiche souvent « Failed to create app » sans détail. En CLI, tu verras la vraie cause.  
    - Installe Fly CLI : [fly.io/docs/hands-on/install-flyctl](https://fly.io/docs/hands-on/install-flyctl/) (ou `brew install flyctl` sur Mac).  
    - Connexion : `fly auth login`  
@@ -371,6 +372,14 @@ Cette erreur peut venir de plusieurs choses. À essayer dans l’ordre :
      `git clone https://github.com/fnormandweb/gilbertnormand.git && cd gilbertnormand`  
    - Lance : `fly launch`  
      Réponds aux questions (nom d’app, région). Si une erreur s’affiche, **copie-colle le message complet** pour la partager (quota, carte requise, région, etc.).
+=======
+   Au lieu du dashboard, utilise le CLI :  
+   `fly auth login`  
+   puis dans le dossier du projet (avec un `fly.toml` ou après `fly launch`) :  
+   `fly launch`  
+   ou `fly apps create NOM_APP`.  
+   Le terminal affichera un message d’erreur plus explicite (région, quota, organisation, etc.).
+>>>>>>> c41681e2f1ef4a02794447a395e11139e47d4655
 
 3. **Vérifier le compte**  
    Certains comptes (nouveaux ou non vérifiés) ont des limites. Vérifie tes infos sur [fly.io/dashboard](https://fly.io/dashboard) et que tu n’as pas dépassé le nombre d’apps ou de machines autorisées.

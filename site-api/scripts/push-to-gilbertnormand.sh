@@ -31,11 +31,14 @@ rm -rf "$DIR_NAME/site-web-admin/node_modules" "$DIR_NAME/site-web-admin/dist"
 cp "$PROJECT_ROOT/site-api/.gitignore-gilbert-repo" "$DIR_NAME/.gitignore"
 cp "$PROJECT_ROOT/site-api/Dockerfile" "$PROJECT_ROOT/site-api/fly.toml" "$DIR_NAME/"
 
+<<<<<<< HEAD
 # Corriger site-web/package.json : "workspace:*" -> "^6.0.0" pour le build standalone (Fly, Render)
 if [ -f "$DIR_NAME/site-web/package.json" ]; then
   sed 's/"workspace:\*"/"^6.0.0"/g' "$DIR_NAME/site-web/package.json" > "$DIR_NAME/site-web/package.json.tmp" && mv "$DIR_NAME/site-web/package.json.tmp" "$DIR_NAME/site-web/package.json"
 fi
 
+=======
+>>>>>>> c41681e2f1ef4a02794447a395e11139e47d4655
 cd "$DIR_NAME"
 echo "Init Git, commit..."
 git init
@@ -46,7 +49,11 @@ git remote add origin "$REPO_URL"
 # Si le distant a déjà des commits (ex. README), on les récupère avant de pousser
 if git ls-remote --exit-code --heads origin main 2>/dev/null; then
   echo "Récupération des commits distants (README etc.)..."
+<<<<<<< HEAD
   git pull origin main --allow-unrelated-histories --no-rebase --no-edit
+=======
+  git pull origin main --allow-unrelated-histories --no-edit
+>>>>>>> c41681e2f1ef4a02794447a395e11139e47d4655
 fi
 git push -u origin main
 

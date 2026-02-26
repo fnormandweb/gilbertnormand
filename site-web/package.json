@@ -9,6 +9,10 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "vite": "^6.0.0"
+=======
+    "vite": "workspace:*"
+>>>>>>> c41681e2f1ef4a02794447a395e11139e47d4655
   }
 }
