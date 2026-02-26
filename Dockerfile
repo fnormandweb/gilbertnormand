@@ -9,13 +9,13 @@ WORKDIR /app
 # pnpm pour les builds
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Code source (on copie tout d'abord pour pouvoir corriger package.json)
+# Code source
 COPY site-api ./site-api
 COPY site-web ./site-web
 COPY site-web-admin ./site-web-admin
 
-# site-web a "vite": "workspace:*" (monorepo) : remplacer par une version fixe pour le build
-RUN sed -i 's/"workspace:\*"/"^6.0.0"/g' site-web/package.json
+# site-web : forcer un package.json valide (le repo peut avoir des conflits Git ou workspace:*)
+COPY site-api/site-web-package.json site-web/package.json
 RUN rm -f site-web/pnpm-lock.yaml site-web/package-lock.json
 
 # Dépendances : site-api et site-web-admin en pnpm, site-web en npm (évite les soucis pnpm/workspace)
