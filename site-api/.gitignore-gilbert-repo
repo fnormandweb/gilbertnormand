@@ -1,0 +1,9 @@
+# À placer à la racine du dépôt Gilbert (ou copier en .gitignore)
+node_modules
+.env
+.env.*
+site-api/data
+site-web/dist
+site-web-admin/dist
+.DS_Store
+*.log
