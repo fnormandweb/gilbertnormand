@@ -13,7 +13,7 @@ let texts = JSON.parse(JSON.stringify(defaultTexts))
 let famille = defaultFamille
   ? JSON.parse(JSON.stringify(defaultFamille))
   : { generations: [], persons: [] }
-let currentPanel = 'chrono'
+let currentPanel = 'accueil'
 let editTimelineIndex = null
 let editGalleryIndex = null
 let editFamillePersonIndex = null
@@ -84,7 +84,14 @@ async function initApi() {
     ])
     if (Array.isArray(t)) timeline = t
     if (Array.isArray(g)) gallery = g
-    if (txt && typeof txt === 'object') texts = txt
+    if (txt && typeof txt === 'object') {
+      texts = txt
+      if (texts.home && !Array.isArray(texts.home.heroSlides))
+        texts.home.heroSlides =
+          defaultTexts.home && defaultTexts.home.heroSlides
+            ? [...defaultTexts.home.heroSlides]
+            : []
+    }
     if (fam && Array.isArray(fam.persons))
       famille = { generations: fam.generations || [], persons: fam.persons }
     useApi = true
@@ -160,7 +167,15 @@ async function exportGallery() {
 function exportTexts() {
   const form = document.getElementById('form-textes')
   const data = form ? getTextsFromForm(form) : texts
-  if (data) texts = data
+  if (data) {
+    const savedSlides =
+      texts.home && Array.isArray(texts.home.heroSlides)
+        ? texts.home.heroSlides
+        : null
+    texts = data
+    if (texts.home && savedSlides && !Array.isArray(texts.home.heroSlides))
+      texts.home.heroSlides = savedSlides
+  }
   if (useApi) {
     ;(async () => {
       try {
@@ -190,6 +205,109 @@ function exportTexts() {
 
 function resetTexts() {
   texts = JSON.parse(JSON.stringify(defaultTexts))
+  emit()
+}
+
+function ensureHome() {
+  if (!texts.home) texts.home = {}
+  return texts.home
+}
+
+function addHeroSlide() {
+  const h = ensureHome()
+  if (!Array.isArray(h.heroSlides)) h.heroSlides = []
+  h.heroSlides.push({ image: '', alt: '' })
+  emit()
+}
+
+function removeHeroSlide(i) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.heroSlides)) return
+  h.heroSlides.splice(i, 1)
+  emit()
+}
+
+function moveHeroSlide(i, dir) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.heroSlides)) return
+  const j = i + dir
+  if (j < 0 || j >= h.heroSlides.length) return
+  ;[h.heroSlides[i], h.heroSlides[j]] = [h.heroSlides[j], h.heroSlides[i]]
+  emit()
+}
+
+function addAboutParagraph() {
+  const h = ensureHome()
+  if (!Array.isArray(h.aboutParagraphs)) h.aboutParagraphs = []
+  h.aboutParagraphs.push('')
+  emit()
+}
+
+function removeAboutParagraph(i) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.aboutParagraphs)) return
+  h.aboutParagraphs.splice(i, 1)
+  emit()
+}
+
+function addParcoursCard() {
+  const h = ensureHome()
+  if (!Array.isArray(h.leitmotiveCards)) h.leitmotiveCards = []
+  h.leitmotiveCards.push({ title: '', description: '' })
+  emit()
+}
+
+function removeParcoursCard(i) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.leitmotiveCards)) return
+  h.leitmotiveCards.splice(i, 1)
+  emit()
+}
+
+function addReferenceCard() {
+  const h = ensureHome()
+  if (!Array.isArray(h.referenceCards)) h.referenceCards = []
+  h.referenceCards.push({ title: '', description: '', links: [] })
+  emit()
+}
+
+function removeReferenceCard(i) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.referenceCards)) return
+  h.referenceCards.splice(i, 1)
+  emit()
+}
+
+function addReferenceLink(cardIndex) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.referenceCards) || !h.referenceCards[cardIndex])
+    return
+  if (!Array.isArray(h.referenceCards[cardIndex].links))
+    h.referenceCards[cardIndex].links = []
+  h.referenceCards[cardIndex].links.push({ text: '', url: '' })
+  emit()
+}
+
+function removeReferenceLink(cardIndex, linkIndex) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.referenceCards) || !h.referenceCards[cardIndex])
+    return
+  const links = h.referenceCards[cardIndex].links
+  if (Array.isArray(links)) links.splice(linkIndex, 1)
+  emit()
+}
+
+function addCitation() {
+  const h = ensureHome()
+  if (!Array.isArray(h.citations)) h.citations = []
+  h.citations.push({ text: '', author: '' })
+  emit()
+}
+
+function removeCitation(i) {
+  const h = texts.home
+  if (!h || !Array.isArray(h.citations)) return
+  h.citations.splice(i, 1)
   emit()
 }
 
@@ -719,7 +837,7 @@ function renderTimelineModal() {
       <div class="modal">
         <div class="modal-header">
           <h2>${entry.dateLabel || entry.title ? 'Modifier' : 'Ajouter'} l'entrée</h2>
-          <button type="button" class="btn" onclick="document.getElementById('modal-timeline').style.display='none'">Fermer</button>
+          <button type="button" class="btn" onclick="editTimelineIndex=null; document.getElementById('modal-timeline').style.display='none'">Fermer</button>
         </div>
         <form id="form-timeline" class="modal-body" onsubmit="saveTimelineEntry(); return false;">
           <div class="form-row">
@@ -744,6 +862,11 @@ function renderTimelineModal() {
             <label>${imageSectionLabel}</label>
             ${previewHtml}
             <input type="text" name="imageUrl" value="${escapeAttr(img.url)}" placeholder="${hasImage ? 'Nouvelle URL pour remplacer' : '/images/...'}" />
+            <div class="timeline-upload-row">
+              <input type="file" id="timeline-image-upload" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" />
+              <button type="button" class="btn btn-secondary" id="timeline-image-upload-btn">Parcourir pour envoyer une image</button>
+              <span id="timeline-image-upload-status" class="upload-status"></span>
+            </div>
             <div class="form-row form-row--tight">
               <div class="form-group">
                 <label>Alt image</label>
@@ -764,7 +887,7 @@ function renderTimelineModal() {
             <textarea name="links" placeholder="https://...|Profil parlementaire">${escapeAttr(linksStr)}</textarea>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn" onclick="document.getElementById('modal-timeline').style.display='none'">Annuler</button>
+            <button type="button" class="btn" onclick="editTimelineIndex=null; document.getElementById('modal-timeline').style.display='none'">Annuler</button>
             <button type="submit" class="btn btn-primary">Enregistrer</button>
           </div>
         </form>
@@ -781,7 +904,7 @@ function renderGalleryModal() {
       <div class="modal">
         <div class="modal-header">
           <h2>Modifier l'image</h2>
-          <button type="button" class="btn" onclick="document.getElementById('modal-gallery').style.display='none'">Fermer</button>
+          <button type="button" class="btn" onclick="editGalleryIndex=null; document.getElementById('modal-gallery').style.display='none'">Fermer</button>
         </div>
         <form id="form-gallery" class="modal-body" onsubmit="saveGalleryImage(); return false;">
           <div class="form-group">
@@ -793,7 +916,7 @@ function renderGalleryModal() {
             <input type="text" name="alt" value="${escapeAttr(item.alt)}" />
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn" onclick="document.getElementById('modal-gallery').style.display='none'">Annuler</button>
+            <button type="button" class="btn" onclick="editGalleryIndex=null; document.getElementById('modal-gallery').style.display='none'">Annuler</button>
             <button type="submit" class="btn btn-primary">Enregistrer</button>
           </div>
         </form>
@@ -826,7 +949,7 @@ function renderFamillePersonModal() {
       <div class="modal">
         <div class="modal-header">
           <h2>${p.name ? 'Modifier' : 'Ajouter'} la personne</h2>
-          <button type="button" class="btn" onclick="document.getElementById('modal-famille-person').style.display='none'">Fermer</button>
+          <button type="button" class="btn" onclick="editFamillePersonIndex=null; document.getElementById('modal-famille-person').style.display='none'">Fermer</button>
         </div>
         <form id="form-famille-person" class="modal-body" onsubmit="saveFamillePerson(); return false;">
           <div class="form-group">
@@ -882,7 +1005,7 @@ function renderFamillePersonModal() {
               : ''
           }
           <div class="modal-footer">
-            <button type="button" class="btn" onclick="document.getElementById('modal-famille-person').style.display='none'">Annuler</button>
+            <button type="button" class="btn" onclick="editFamillePersonIndex=null; document.getElementById('modal-famille-person').style.display='none'">Annuler</button>
             <button type="submit" class="btn btn-primary">Enregistrer</button>
           </div>
         </form>
@@ -940,11 +1063,29 @@ function render() {
     renderLogin()
     return
   }
+  const accueilHome = texts.home || {}
+  const accueilSlides = Array.isArray(accueilHome.heroSlides)
+    ? accueilHome.heroSlides
+    : []
+  const accueilParas = Array.isArray(accueilHome.aboutParagraphs)
+    ? accueilHome.aboutParagraphs
+    : []
+  const accueilParcours = Array.isArray(accueilHome.leitmotiveCards)
+    ? accueilHome.leitmotiveCards
+    : []
+  const accueilRefs = Array.isArray(accueilHome.referenceCards)
+    ? accueilHome.referenceCards
+    : []
+  const accueilCitations = Array.isArray(accueilHome.citations)
+    ? accueilHome.citations
+    : []
+
   app.innerHTML = `
     <header class="admin-header">
       <h1>Admin — Gilbert Normand</h1>
       ${useApi ? '<span class="admin-badge">Connecté · Publier enregistre en ligne</span>' : ''}
       <nav class="admin-nav">
+        <button type="button" class="${currentPanel === 'accueil' ? 'active' : ''}" data-panel="accueil">Page accueil</button>
         <button type="button" class="${currentPanel === 'chrono' ? 'active' : ''}" data-panel="chrono">Chronologie</button>
         <button type="button" class="${currentPanel === 'galerie' ? 'active' : ''}" data-panel="galerie">Galerie</button>
         <button type="button" class="${currentPanel === 'textes' ? 'active' : ''}" data-panel="textes">Textes</button>
@@ -953,6 +1094,134 @@ function render() {
       </nav>
     </header>
     <main class="admin-main">
+      <section id="panel-accueil" class="admin-panel ${currentPanel === 'accueil' ? 'active' : ''}">
+        <div class="admin-toolbar">
+          <button type="button" class="btn btn-primary" onclick="exportTexts()">Publier la page accueil</button>
+        </div>
+        <p class="help-text">Modifiez chaque bloc ci-dessous. Les changements sont enregistrés en mémoire ; cliquez sur <strong>Publier la page accueil</strong> pour les enregistrer en ligne (ou télécharger le fichier).</p>
+
+        <details class="accueil-block" open>
+          <summary class="accueil-block-title">Bloc Header (carrousel + titre et boutons)</summary>
+          <div class="accueil-block-body">
+            <div class="form-group"><label>Titre principal</label><input type="text" value="${escapeAttr(accueilHome.heroTitle)}" oninput="texts.home.heroTitle=this.value; emit()" /></div>
+            <div class="form-group"><label>Sous-titre</label><input type="text" value="${escapeAttr(accueilHome.heroSubtitle)}" oninput="texts.home.heroSubtitle=this.value; emit()" /></div>
+            <div class="form-group"><label>Bouton Chronologie</label><input type="text" value="${escapeAttr(accueilHome.heroBtnChrono)}" oninput="texts.home.heroBtnChrono=this.value; emit()" /></div>
+            <div class="form-group"><label>Bouton Parcours</label><input type="text" value="${escapeAttr(accueilHome.heroBtnParcours)}" oninput="texts.home.heroBtnParcours=this.value; emit()" /></div>
+            <h4 class="accueil-sub">Images du slide (ordre affiché sur le site)</h4>
+            ${accueilSlides
+              .map(
+                (s, i) => `
+            <div class="accueil-slide-row">
+              <span class="accueil-num">${i + 1}</span>
+              <input type="text" placeholder="URL image" value="${escapeAttr(s.image)}" oninput="texts.home.heroSlides[${i}].image=this.value; emit()" />
+              <input type="text" placeholder="Texte alternatif" value="${escapeAttr(s.alt)}" oninput="texts.home.heroSlides[${i}].alt=this.value; emit()" />
+              <div class="accueil-row-actions">
+                <button type="button" class="btn btn-icon" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="moveHeroSlide(${i}, -1)">↑</button>
+                <button type="button" class="btn btn-icon" title="Descendre" ${i === accueilSlides.length - 1 ? 'disabled' : ''} onclick="moveHeroSlide(${i}, 1)">↓</button>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeHeroSlide(${i})">Retirer</button>
+              </div>
+            </div>`,
+              )
+              .join('')}
+            <button type="button" class="btn btn-secondary" onclick="addHeroSlide()">Ajouter une image au slide</button>
+          </div>
+        </details>
+
+        <details class="accueil-block" open>
+          <summary class="accueil-block-title">Bloc À propos (texte)</summary>
+          <div class="accueil-block-body">
+            <div class="form-group"><label>Titre de la section</label><input type="text" value="${escapeAttr(accueilHome.aboutTitle)}" oninput="texts.home.aboutTitle=this.value; emit()" /></div>
+            <div class="form-group"><label>Sous-titre</label><input type="text" value="${escapeAttr(accueilHome.aboutSubtitle)}" oninput="texts.home.aboutSubtitle=this.value; emit()" /></div>
+            <h4 class="accueil-sub">Paragraphes</h4>
+            ${accueilParas
+              .map(
+                (p, i) => `
+            <div class="accueil-para-row">
+              <textarea rows="2" oninput="texts.home.aboutParagraphs[${i}]=this.value; emit()">${escapeAttr(p)}</textarea>
+              <button type="button" class="btn btn-danger btn-small" onclick="removeAboutParagraph(${i})">Retirer</button>
+            </div>`,
+              )
+              .join('')}
+            <button type="button" class="btn btn-secondary" onclick="addAboutParagraph()">Ajouter un paragraphe</button>
+          </div>
+        </details>
+
+        <details class="accueil-block" open>
+          <summary class="accueil-block-title">Bloc Parcours (box responsive)</summary>
+          <div class="accueil-block-body">
+            <div class="form-group"><label>Titre de la section</label><input type="text" value="${escapeAttr(accueilHome.leitmotiveTitle)}" oninput="texts.home.leitmotiveTitle=this.value; emit()" /></div>
+            <div class="form-group"><label>Sous-titre</label><input type="text" value="${escapeAttr(accueilHome.leitmotiveSubtitle)}" oninput="texts.home.leitmotiveSubtitle=this.value; emit()" /></div>
+            <h4 class="accueil-sub">Cartes (box)</h4>
+            ${accueilParcours
+              .map(
+                (c, i) => `
+            <div class="accueil-card-row">
+              <div class="accueil-card-fields">
+                <input type="text" placeholder="Titre" value="${escapeAttr(c.title)}" oninput="texts.home.leitmotiveCards[${i}].title=this.value; emit()" />
+                <textarea rows="2" placeholder="Description" oninput="texts.home.leitmotiveCards[${i}].description=this.value; emit()">${escapeAttr(c.description)}</textarea>
+              </div>
+              <button type="button" class="btn btn-danger btn-small" onclick="removeParcoursCard(${i})">Retirer la carte</button>
+            </div>`,
+              )
+              .join('')}
+            <button type="button" class="btn btn-secondary" onclick="addParcoursCard()">Ajouter une carte</button>
+          </div>
+        </details>
+
+        <details class="accueil-block" open>
+          <summary class="accueil-block-title">Bloc Références externes (titre, texte, liens)</summary>
+          <div class="accueil-block-body">
+            <div class="form-group"><label>Titre de la section</label><input type="text" value="${escapeAttr(accueilHome.referencesTitle)}" oninput="texts.home.referencesTitle=this.value; emit()" /></div>
+            <div class="form-group"><label>Sous-titre</label><input type="text" value="${escapeAttr(accueilHome.referencesSubtitle)}" oninput="texts.home.referencesSubtitle=this.value; emit()" /></div>
+            <h4 class="accueil-sub">Cartes (titre, description, boutons liens)</h4>
+            ${accueilRefs
+              .map(
+                (card, ci) => `
+            <div class="accueil-ref-card">
+              <div class="form-group"><input type="text" placeholder="Titre carte" value="${escapeAttr(card.title)}" oninput="texts.home.referenceCards[${ci}].title=this.value; emit()" /></div>
+              <div class="form-group"><textarea rows="2" placeholder="Description" oninput="texts.home.referenceCards[${ci}].description=this.value; emit()">${escapeAttr(card.description)}</textarea></div>
+              <div class="accueil-links-list">
+                ${(card.links || [])
+                  .map(
+                    (link, li) => `
+                <div class="accueil-link-row">
+                  <input type="text" placeholder="Texte du bouton" value="${escapeAttr(link.text)}" oninput="texts.home.referenceCards[${ci}].links[${li}].text=this.value; emit()" />
+                  <input type="text" placeholder="URL" value="${escapeAttr(link.url)}" oninput="texts.home.referenceCards[${ci}].links[${li}].url=this.value; emit()" />
+                  <button type="button" class="btn btn-danger btn-small" onclick="removeReferenceLink(${ci}, ${li})">Retirer</button>
+                </div>`,
+                  )
+                  .join('')}
+              </div>
+              <div class="accueil-ref-actions">
+                <button type="button" class="btn btn-secondary btn-small" onclick="addReferenceLink(${ci})">Ajouter un lien</button>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeReferenceCard(${ci})">Retirer la carte</button>
+              </div>
+            </div>`,
+              )
+              .join('')}
+            <button type="button" class="btn btn-secondary" onclick="addReferenceCard()">Ajouter une carte référence</button>
+          </div>
+        </details>
+
+        <details class="accueil-block" open>
+          <summary class="accueil-block-title">Bloc Citations</summary>
+          <div class="accueil-block-body">
+            <div class="form-group"><label>Titre de la section</label><input type="text" value="${escapeAttr(accueilHome.citationsTitle)}" oninput="texts.home.citationsTitle=this.value; emit()" /></div>
+            <h4 class="accueil-sub">Citations (affichage aléatoire sur le site)</h4>
+            ${accueilCitations
+              .map(
+                (cit, i) => `
+            <div class="accueil-citation-row">
+              <textarea rows="2" placeholder="Citation" oninput="texts.home.citations[${i}].text=this.value; emit()">${escapeAttr(cit.text)}</textarea>
+              <input type="text" placeholder="Auteur" value="${escapeAttr(cit.author)}" oninput="texts.home.citations[${i}].author=this.value; emit()" />
+              <button type="button" class="btn btn-danger btn-small" onclick="removeCitation(${i})">Retirer</button>
+            </div>`,
+              )
+              .join('')}
+            <button type="button" class="btn btn-secondary" onclick="addCitation()">Ajouter une citation</button>
+          </div>
+        </details>
+      </section>
       <section id="panel-chrono" class="admin-panel ${currentPanel === 'chrono' ? 'active' : ''}">
         <div class="admin-toolbar">
           <button type="button" class="btn btn-primary" onclick="addTimelineEntry()">Ajouter une entrée</button>
@@ -1070,6 +1339,10 @@ function render() {
   app.querySelectorAll('.admin-nav button[data-panel]').forEach((btn) => {
     btn.addEventListener('click', () => {
       currentPanel = btn.dataset.panel
+      // En changeant de section, fermer tout modal ouvert (évite réouverture "lightbox")
+      editTimelineIndex = null
+      editGalleryIndex = null
+      editFamillePersonIndex = null
       emit()
     })
   })
@@ -1116,9 +1389,55 @@ function render() {
     }
   }
 
-  if (editTimelineIndex != null) openTimelineModal()
-  if (editGalleryIndex != null) openGalleryModal()
-  if (editFamillePersonIndex != null) openFamillePersonModal()
+  const timelineUploadInput = document.getElementById('timeline-image-upload')
+  const timelineUploadBtn = document.getElementById('timeline-image-upload-btn')
+  const timelineUploadStatus = document.getElementById(
+    'timeline-image-upload-status',
+  )
+  if (timelineUploadInput && timelineUploadBtn) {
+    timelineUploadBtn.onclick = () => timelineUploadInput.click()
+    timelineUploadInput.onchange = async () => {
+      const file = timelineUploadInput.files[0]
+      if (!file) return
+      if (timelineUploadStatus) timelineUploadStatus.textContent = 'Envoi…'
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const r = await fetch(API_BASE + '/api/upload', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        })
+        const data = await r.json().catch(() => ({}))
+        if (!r.ok) throw new Error(data.error || "Erreur lors de l'envoi.")
+        if (!data.url) throw new Error('Réponse invalide.')
+        const form = document.getElementById('form-timeline')
+        if (form && form.imageUrl) {
+          form.imageUrl.value = data.url
+          if (editTimelineIndex != null && timeline[editTimelineIndex]) {
+            const entry = timeline[editTimelineIndex]
+            entry.image = entry.image || {}
+            entry.image.url = data.url
+          }
+          if (timelineUploadStatus)
+            timelineUploadStatus.textContent = 'Image enregistrée.'
+          timelineUploadInput.value = ''
+          emit()
+        }
+      } catch (e) {
+        if (timelineUploadStatus) timelineUploadStatus.textContent = ''
+        alert(e.message || 'Erreur upload')
+      }
+    }
+  }
+
+  // N'ouvrir un modal qu'on vient d'éditer que si on est encore sur la section concernée
+  if (currentPanel === 'chrono' && editTimelineIndex != null)
+    openTimelineModal()
+  else if (currentPanel === 'galerie' && editGalleryIndex != null)
+    openGalleryModal()
+  else if (currentPanel === 'famille' && editFamillePersonIndex != null)
+    openFamillePersonModal()
 }
 
 let dragType = null
@@ -1189,11 +1508,14 @@ window.deleteFamillePerson = deleteFamillePerson
 window.exportFamille = exportFamille
 window.initFamilleWithDefault = initFamilleWithDefault
 window.switchFamilleView = switchFamilleView
+window.exportTimeline = exportTimeline
+window.removeTimelineEntryImage = removeTimelineEntryImage
 window.addTimelineEntry = addTimelineEntry
 window.editTimelineEntry = editTimelineEntry
 window.saveTimelineEntry = saveTimelineEntry
 window.deleteTimelineEntry = deleteTimelineEntry
 window.moveTimelineEntry = moveTimelineEntry
+window.exportGallery = exportGallery
 window.addGalleryImage = addGalleryImage
 window.editGalleryImage = editGalleryImage
 window.saveGalleryImage = saveGalleryImage
@@ -1201,5 +1523,18 @@ window.deleteGalleryImage = deleteGalleryImage
 window.moveGalleryImage = moveGalleryImage
 window.exportTexts = exportTexts
 window.resetTexts = resetTexts
+window.addHeroSlide = addHeroSlide
+window.removeHeroSlide = removeHeroSlide
+window.moveHeroSlide = moveHeroSlide
+window.addAboutParagraph = addAboutParagraph
+window.removeAboutParagraph = removeAboutParagraph
+window.addParcoursCard = addParcoursCard
+window.removeParcoursCard = removeParcoursCard
+window.addReferenceCard = addReferenceCard
+window.removeReferenceCard = removeReferenceCard
+window.addReferenceLink = addReferenceLink
+window.removeReferenceLink = removeReferenceLink
+window.addCitation = addCitation
+window.removeCitation = removeCitation
 
 boot()

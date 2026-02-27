@@ -415,6 +415,20 @@ export const defaultGallery = [
 
 export const defaultTexts = {
   home: {
+    heroSlides: [
+      {
+        image: '/images/header_gilbert1.jpg',
+        alt: 'Gilbert Normand - Portrait officiel',
+      },
+      {
+        image: '/images/header_Line_Anctil_Gilbert_Normand.jpg',
+        alt: 'Line Anctil et Gilbert Normand',
+      },
+      {
+        image: '/images/header_jean_paul_riopelle_gilbert_normand.jpg',
+        alt: 'Gilbert Normand avec Jean-Paul Riopelle',
+      },
+    ],
     heroTitle:
       'Gilbert Normand : Soigner sa communauté. Diriger sa ville. Représenter son pays.',
     heroSubtitle:

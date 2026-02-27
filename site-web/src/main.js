@@ -14,13 +14,44 @@ let textsData = { home: {}, famille: {}, galerie: {}, footer: {} }
 function render() {
   const t = textsData.home
   const footer = textsData.footer
-  const refCardsHTML = t.referenceCards
+  const slides =
+    Array.isArray(t.heroSlides) && t.heroSlides.length > 0
+      ? t.heroSlides
+      : [
+          {
+            image: '/images/header_gilbert1.jpg',
+            alt: 'Gilbert Normand - Portrait officiel',
+          },
+          {
+            image: '/images/header_Line_Anctil_Gilbert_Normand.jpg',
+            alt: 'Line Anctil et Gilbert Normand',
+          },
+          {
+            image: '/images/header_jean_paul_riopelle_gilbert_normand.jpg',
+            alt: 'Gilbert Normand avec Jean-Paul Riopelle',
+          },
+        ]
+  const firstSlide = slides[0]
+  const heroSlidesHTML = slides
+    .map(
+      (s, i) =>
+        `<div class="hero-slide ${i === 0 ? 'active' : ''}" data-slide="${i}" aria-current="${i === 0 ? 'true' : 'false'}" aria-hidden="${i !== 0}"><img class="hero-bg" src="${s.image}" alt="${(s.alt || '').replace(/"/g, '&quot;')}" /><div class="hero-smoke-overlay"></div></div>`,
+    )
+    .join('')
+  const heroIndicatorsHTML = slides
+    .map(
+      (s, i) =>
+        `<button type="button" class="hero-slider-indicator ${i === 0 ? 'active' : ''}" role="tab" aria-selected="${i === 0}" aria-label="Image ${i + 1} sur ${slides.length} : ${(s.alt || '').replace(/"/g, '&quot;')}" data-slide="${i}"></button>`,
+    )
+    .join('')
+  const refCardsHTML = (t.referenceCards || [])
     .map((card, i) => {
+      const links = card.links || []
       const linksHTML =
-        card.links.length === 1
-          ? `<a href="${card.links[0].url}" target="_blank" rel="noopener noreferrer" class="ej-reference-button">${card.links[0].text} <span class="sr-only">(ouvre dans un nouvel onglet)</span> <svg class="ej-reference-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`
+        links.length === 1
+          ? `<a href="${links[0].url}" target="_blank" rel="noopener noreferrer" class="ej-reference-button">${links[0].text} <span class="sr-only">(ouvre dans un nouvel onglet)</span> <svg class="ej-reference-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`
           : '<div class="ej-reference-links">' +
-            card.links
+            links
               .map(
                 (l) =>
                   `<a href="${l.url}" target="_blank" rel="noopener noreferrer" class="ej-reference-button">${l.text} <span class="sr-only">(ouvre dans un nouvel onglet)</span> <svg class="ej-reference-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`,
@@ -34,19 +65,24 @@ function render() {
       return `<div class="ej-reference-card"><div class="ej-reference-header"><svg class="ej-reference-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${iconD}</svg><h3 class="ej-reference-title">${card.title}</h3></div><p class="ej-reference-description">${card.description}</p>${linksHTML}</div>`
     })
     .join('')
-  const leitmotiveCardsHTML = t.leitmotiveCards
+  const leitmotiveCardsHTML = (t.leitmotiveCards || [])
+    .map((card, i) => {
+      const icon = LEITMOTIVE_ICONS[i % LEITMOTIVE_ICONS.length]
+      return `<div class="ej-leitmotive-card"><h3 class="ej-leitmotive-card-title"><img src="${icon}" alt="" width="28" height="28" /> ${(card.title || '').replace(/</g, '&lt;')}</h3><p class="ej-leitmotive-card-desc">${(card.description || '').replace(/</g, '&lt;')}</p></div>`
+    })
+    .join('')
+  const aboutParas = Array.isArray(t.aboutParagraphs) ? t.aboutParagraphs : []
+  const aboutCol1 = aboutParas
+    .slice(0, Math.ceil(aboutParas.length / 2))
     .map(
-      (card, i) =>
-        `<div class="ej-leitmotive-card"><h3 class="ej-leitmotive-card-title"><img src="${LEITMOTIVE_ICONS[i]}" alt="" width="28" height="28" /> ${card.title}</h3><p class="ej-leitmotive-card-desc">${card.description}</p></div>`,
+      (p) => `<p class="ej-about-text">${String(p).replace(/</g, '&lt;')}</p>`,
     )
     .join('')
-  const aboutCol1 = t.aboutParagraphs
-    .slice(0, 3)
-    .map((p) => `<p class="ej-about-text">${p}</p>`)
-    .join('')
-  const aboutCol2 = t.aboutParagraphs
-    .slice(3)
-    .map((p) => `<p class="ej-about-text">${p}</p>`)
+  const aboutCol2 = aboutParas
+    .slice(Math.ceil(aboutParas.length / 2))
+    .map(
+      (p) => `<p class="ej-about-text">${String(p).replace(/</g, '&lt;')}</p>`,
+    )
     .join('')
   const app = document.querySelector('#app')
   app.innerHTML = `
@@ -88,28 +124,11 @@ function render() {
     <main id="main-content">
     <section class="hero-section hero-slider" role="region" aria-roledescription="carousel" aria-label="Portraits de Gilbert Normand">
       <div class="hero-mobile-image">
-        <img class="hero-bg" src="/images/header_Gilbert_Normand_assermentation.jpg" alt="Gilbert Normand - Assermentation" />
+        <img class="hero-bg" src="${firstSlide ? firstSlide.image : '/images/header_gilbert1.jpg'}" alt="${firstSlide ? (firstSlide.alt || '').replace(/"/g, '&quot;') : 'Gilbert Normand'}" />
         <div class="hero-smoke-overlay"></div>
       </div>
-        <div class="hero-slider-container">
-        <div class="hero-slide active" data-slide="0" aria-current="true" aria-hidden="false">
-          <img class="hero-bg" src="/images/header_gilbert1.jpg" alt="Gilbert Normand - Portrait officiel" />
-          <div class="hero-smoke-overlay"></div>
-        </div>
-        <div class="hero-slide" data-slide="1" aria-current="false" aria-hidden="true">
-          <img class="hero-bg" src="/images/header_Line_Anctil_Gilbert_Normand.jpg" alt="Line Anctil et Gilbert Normand" />
-          <div class="hero-smoke-overlay"></div>
-        </div>
-        <div class="hero-slide" data-slide="2" aria-current="false" aria-hidden="true">
-          <img class="hero-bg" src="/images/header_jean_paul_riopelle_gilbert_normand.jpg" alt="Gilbert Normand avec Jean-Paul Riopelle" />
-          <div class="hero-smoke-overlay"></div>
-        </div>
-      </div>
-      <div class="hero-slider-indicators" role="tablist" aria-label="Choisir une image du carrousel">
-        <button type="button" class="hero-slider-indicator active" role="tab" aria-selected="true" aria-label="Image 1 sur 3 : Portrait officiel" data-slide="0"></button>
-        <button type="button" class="hero-slider-indicator" role="tab" aria-selected="false" aria-label="Image 2 sur 3 : Line Anctil et Gilbert Normand" data-slide="1"></button>
-        <button type="button" class="hero-slider-indicator" role="tab" aria-selected="false" aria-label="Image 3 sur 3 : Gilbert Normand et Jean-Paul Riopelle" data-slide="2"></button>
-      </div>
+      <div class="hero-slider-container">${heroSlidesHTML}</div>
+      <div class="hero-slider-indicators" role="tablist" aria-label="Choisir une image du carrousel">${heroIndicatorsHTML}</div>
       <div class="hero-1-content">
         <div class="title hero-1-title">
           <h1 class="heading---h2"><strong class="bold-text">${t.heroTitle}</strong></h1>
@@ -339,7 +358,8 @@ function initCitations() {
   const prefersReducedMotion = window.matchMedia(
     '(prefers-reduced-motion: reduce)',
   ).matches
-  const citations = textsData.home.citations
+  const citations = textsData.home.citations || []
+  if (!citations.length) return
   function show() {
     if (citations.length > 1) {
       let n

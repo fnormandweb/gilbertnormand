@@ -4,8 +4,9 @@ import cors from 'cors'
 import crypto from 'crypto'
 import initSqlJs from 'sql.js'
 import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { dirname, join, extname } from 'path'
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs'
+import multer from 'multer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -45,14 +46,55 @@ function requireAuth(req, res, next) {
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '2mb' }))
 
+// Dossier pour les images uploadées (chronologie, etc.) — accessible en /uploads/
+const uploadsDir = join(__dirname, 'uploads')
+if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true })
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const ext = (extname(file.originalname) || '.jpg')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+      const safeExt = ext || 'jpg'
+      const name = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${safeExt}`
+      cb(null, name)
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 Mo
+  fileFilter: (_req, file, cb) => {
+    const ok = /^image\/(jpeg|png|gif|webp)$/i.test(file.mimetype)
+    cb(
+      ok
+        ? null
+        : new Error('Seules les images (JPEG, PNG, GIF, WebP) sont acceptées.'),
+      ok,
+    )
+  },
+})
+
 let db = null
+let dbPathResolved = null
 
 async function getDb() {
   if (db) return db
   const SQL = await initSqlJs()
   const dataDir = join(__dirname, 'data')
   if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true })
-  const dbPath = process.env.DB_PATH || join(dataDir, 'gilbert.db')
+  let dbPath = process.env.DB_PATH || join(dataDir, 'gilbert.db')
+  // Si DB_PATH est défini (ex. /data/gilbert.db) mais que le dossier n'existe pas (Render sans volume), utiliser le défaut
+  if (process.env.DB_PATH) {
+    const dbDir = dirname(dbPath)
+    if (!existsSync(dbDir)) {
+      try {
+        mkdirSync(dbDir, { recursive: true })
+      } catch {
+        dbPath = join(dataDir, 'gilbert.db')
+      }
+    }
+  }
+  dbPathResolved = dbPath
   if (existsSync(dbPath)) {
     db = new SQL.Database(readFileSync(dbPath))
   } else {
@@ -69,9 +111,10 @@ async function getDb() {
 
 function saveDb() {
   if (!db) return
-  const dataDir = join(__dirname, 'data')
-  const dbPath = process.env.DB_PATH || join(dataDir, 'gilbert.db')
-  writeFileSync(dbPath, Buffer.from(db.export()))
+  const path = dbPathResolved || join(__dirname, 'data', 'gilbert.db')
+  const dir = dirname(path)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  writeFileSync(path, Buffer.from(db.export()))
 }
 
 function getContent(key) {
@@ -214,11 +257,9 @@ app.post('/api/famille', requireAuth, (req, res) => {
       return res.status(400).json({ error: 'Body must be an object' })
     const ok = Array.isArray(body.generations) && Array.isArray(body.persons)
     if (!ok)
-      return res
-        .status(400)
-        .json({
-          error: 'Body must have generations (array) and persons (array)',
-        })
+      return res.status(400).json({
+        error: 'Body must have generations (array) and persons (array)',
+      })
     setContent('famille', {
       generations: body.generations,
       persons: body.persons,
@@ -229,6 +270,34 @@ app.post('/api/famille', requireAuth, (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+app.post(
+  '/api/upload',
+  requireAuth,
+  (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE')
+          return res
+            .status(400)
+            .json({ error: 'Fichier trop volumineux (max 10 Mo).' })
+        return res.status(400).json({ error: err.message || 'Erreur upload' })
+      }
+      next()
+    })
+  },
+  (req, res) => {
+    try {
+      if (!req.file)
+        return res.status(400).json({ error: 'Aucun fichier envoyé.' })
+      const url = '/uploads/' + req.file.filename
+      res.json({ ok: true, url })
+    } catch (err) {
+      console.error(err)
+      res.status(500).json({ error: err.message })
+    }
+  },
+)
 
 app.get('/api/health', (req, res) => {
   try {
@@ -285,6 +354,9 @@ app.use('/admin', (req, res, next) => {
 app.use('/admin', express.static(adminDist))
 app.get('/admin', (req, res) => res.sendFile(join(adminDist, 'index.html')))
 app.get('/admin/*', (req, res) => res.sendFile(join(adminDist, 'index.html')))
+
+// Servir les images uploadées à /uploads/ (chronologie, etc.)
+app.use('/uploads', express.static(uploadsDir))
 
 // Servir le site public à / (les routes /api et /admin sont déjà enregistrées au-dessus)
 const siteDist = join(__dirname, '..', 'site-web', 'dist')

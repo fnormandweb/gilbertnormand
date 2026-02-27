@@ -281,6 +281,20 @@ body {
 .timeline-entry-image-preview .btn-small {
   flex-shrink: 0;
 }
+.timeline-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.timeline-upload-row .btn-secondary {
+  flex-shrink: 0;
+}
+.upload-status {
+  font-size: 0.9rem;
+  color: #0a0;
+}
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -709,4 +723,112 @@ details.texts-section[open] .texts-section-title::before {
   color: #666;
   margin-top: 4px;
   margin-bottom: 0;
+}
+
+/* Page accueil — blocs */
+.accueil-block {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid #eee;
+}
+.accueil-block-title {
+  padding: 12px 16px;
+  background: #f8f8f8;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.accueil-block-title::-webkit-details-marker {
+  display: none;
+}
+.accueil-block-body {
+  padding: 16px;
+  border-top: 1px solid #eee;
+}
+.accueil-sub {
+  font-size: 0.95rem;
+  margin: 16px 0 8px;
+  color: #333;
+}
+.accueil-slide-row,
+.accueil-para-row,
+.accueil-card-row,
+.accueil-link-row,
+.accueil-citation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+.accueil-slide-row input[type='text']:first-of-type {
+  flex: 1;
+  min-width: 120px;
+}
+.accueil-slide-row input[type='text']:nth-of-type(2) {
+  flex: 1;
+  min-width: 120px;
+}
+.accueil-num {
+  flex: 0 0 24px;
+  font-weight: 600;
+  color: #666;
+}
+.accueil-row-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.accueil-para-row textarea,
+.accueil-card-row .accueil-card-fields textarea,
+.accueil-citation-row textarea {
+  flex: 1;
+  min-width: 200px;
+  resize: vertical;
+}
+.accueil-card-row .accueil-card-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.accueil-card-row .accueil-card-fields input,
+.accueil-ref-card .form-group input {
+  width: 100%;
+}
+.accueil-ref-card {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f8f8;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+.accueil-links-list {
+  margin: 8px 0;
+}
+.accueil-link-row {
+  margin-bottom: 6px;
+}
+.accueil-link-row input[type='text']:first-of-type {
+  flex: 0 1 160px;
+}
+.accueil-link-row input[type='text']:nth-of-type(2) {
+  flex: 1;
+  min-width: 120px;
+}
+.accueil-ref-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+.accueil-citation-row input[type='text'] {
+  flex: 0 1 140px;
 }
