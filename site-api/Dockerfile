@@ -26,12 +26,12 @@ RUN cd site-web-admin && pnpm install --frozen-lockfile || pnpm install
 # Build site + admin (depuis site-api)
 RUN cd site-api && pnpm run build:all
 
-# Port exposé (Fly.io injecte PORT=8080)
+# Port exposé (Fly.io / Render injectent PORT)
 ENV PORT=8080
 ENV NODE_ENV=production
 
-# Base SQLite : par défaut dans /data si monté (Fly volume), sinon site-api/data
-ENV DB_PATH=/data/gilbert.db
+# Ne pas définir DB_PATH ici : par défaut = site-api/data/gilbert.db (fonctionne sur Render).
+# Sur Fly.io avec volume, définir DB_PATH=/data/gilbert.db dans fly.toml ou secrets.
 
 WORKDIR /app/site-api
 EXPOSE 8080

@@ -313,6 +313,17 @@ git push -u origin main
 
 (Remplace `TON-USERNAME` et `gilbert-normand-site` par ton compte et le nom du repo.)
 
+**Dépôt déjà créé (ex. [fnormandweb/gilbertnormand](https://github.com/fnormandweb/gilbertnormand))**
+
+Si le dépôt est vide et que ton projet est dans un gros repo (ex. `vite-main` avec d’autres dossiers), utilise le script qui copie uniquement `site-api`, `site-web`, `site-web-admin` et pousse vers GitHub. **À lancer depuis la racine du projet** (le dossier qui contient `site-api`) :
+
+```bash
+cd /Users/francoisnormand/Documents/Gilbert/Vite/vite-main
+bash site-api/scripts/push-to-gilbertnormand.sh
+```
+
+Le script crée un dossier `gilbertnormand-push`, y copie les trois dossiers (sans `node_modules`, `dist`, `data`), ajoute le `.gitignore`, fait `git init`, commit, et `git push` vers `https://github.com/fnormandweb/gilbertnormand.git`. Si tu as une erreur « remote origin already exists » ou « failed to push », soit le dépôt n’est plus vide : dans ce cas, va dans `gilbertnormand-push`, puis `git pull origin main --rebase` (ou `--allow-unrelated-histories` si demandé), puis `git push origin main`.
+
 **3. Lier Fly.io au dépôt**
 
 - **Option A — Depuis le dashboard Fly.io**  
@@ -341,6 +352,54 @@ Une fois le repo poussé et Fly.io connecté (ou configuré en local), chaque `g
 Tu obtiendras une URL du type `https://ton-app.fly.dev`. Le site sera en `/`, l’admin en `/admin/`.
 
 Si tu veux, on peut ajouter au repo un `Dockerfile` et un `fly.toml` prêts à l’emploi pour ce projet.
+
+---
+
+### Si Fly.io affiche « Failed to create app »
+
+Cette erreur peut venir de plusieurs choses. À essayer dans l’ordre :
+
+1. **Ajouter un moyen de paiement**  
+   Fly.io demande souvent une carte bancaire même pour utiliser le free tier (ils ne prélèvent rien tant que tu restes dans les limites gratuites). Sans carte, la création d’app peut échouer.  
+   → [fly.io/dashboard](https://fly.io/dashboard) → **Account** / **Billing** → **Add payment method**.
+
+2. **Créer l’app en ligne de commande (pour voir l’erreur précise)**  
+   Le dashboard affiche souvent « Failed to create app » sans détail. En CLI, tu verras la vraie cause.
+   - Installe Fly CLI : [fly.io/docs/hands-on/install-flyctl](https://fly.io/docs/hands-on/install-flyctl/) (ou `brew install flyctl` sur Mac).
+   - Connexion : `fly auth login`
+   - Clone ton repo (ou va dans le dossier qui a déjà `fly.toml` à la racine) :  
+     `git clone https://github.com/fnormandweb/gilbertnormand.git && cd gilbertnormand`
+   - Lance : `fly launch`  
+     Réponds aux questions (nom d’app, région). Si une erreur s’affiche, **copie-colle le message complet** pour la partager (quota, carte requise, région, etc.).
+
+3. **Vérifier le compte**  
+   Certains comptes (nouveaux ou non vérifiés) ont des limites. Vérifie tes infos sur [fly.io/dashboard](https://fly.io/dashboard) et que tu n’as pas dépassé le nombre d’apps ou de machines autorisées.
+
+4. **Utiliser Render en alternative (gratuit sans carte)**  
+   [Render](https://render.com) propose un free tier sans carte obligatoire. Les données sont sur disque **éphémère** (réinitialisées au redéploiement), mais le site + l’admin fonctionnent pour tester.  
+   → Create **Web Service** → connecter le repo GitHub **fnormandweb/gilbertnormand** → Root directory : vide ou `site-api` selon la structure → Build : `cd site-api && npm install && npm run build:all` (ou pnpm) → Start : `npm start` (ou pnpm start) → définir les variables `ADMIN_USER` et `ADMIN_PASSWORD`.
+
+---
+
+### Remplir l’écran de configuration Fly.io (Environment, Working directory, Config path)
+
+Sur l’écran où tu as **Environment Variables**, **Database**, **Working directory** et **Config path** :
+
+1. **Environment Variables**  
+   Clique sur **+ New environment variable** et ajoute :
+   - **Key** : `ADMIN_USER` — **Value** : ton identifiant admin (ex. `admin`).
+   - **Key** : `ADMIN_PASSWORD` — **Value** : un mot de passe sûr (obligatoire en prod).
+
+2. **Database**  
+   Laisse **Managed Postgres** décoché (on utilise SQLite, pas Postgres).
+
+3. **Working directory**  
+   Laisse vide (ou `./`) pour que la racine du repo soit utilisée. Le `Dockerfile` et le `fly.toml` doivent être **à la racine** du dépôt (à côté de `site-api`, `site-web`, `site-web-admin`).
+
+4. **Config path (path to fly.toml)**  
+   Laisse vide (ou `./`) pour que Fly utilise `fly.toml` à la racine.
+
+Pour que le déploiement réussisse, le dépôt GitHub doit contenir à la racine un **Dockerfile** et un **fly.toml** (fournis dans `site-api/` du projet : à copier à la racine du repo, ou re-lancer le script `site-api/scripts/push-to-gilbertnormand.sh` qui les met à la racine puis pousse à nouveau).
 
 ---
 
